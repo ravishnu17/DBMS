@@ -52,7 +52,7 @@ def upgrade() -> None:
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_by', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['country_id'], ['tbl_country.id'], ),
+    sa.ForeignKeyConstraint(['country_id'], ['tbl_country.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_tbl_state_id'), 'tbl_state', ['id'], unique=False)
@@ -62,7 +62,7 @@ def upgrade() -> None:
     sa.Column('role_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('mobile_code', sa.String(), nullable=False),
-    sa.Column('mobile_number', sa.String(), nullable=False, unique=True),
+    sa.Column('mobile_number', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=True),
     sa.Column('otp_verified', sa.Boolean(), nullable=False),
     sa.Column('password', sa.Text(), nullable=True),
@@ -78,7 +78,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_tbl_user_email'), 'tbl_user', ['email'], unique=True)
     op.create_index(op.f('ix_tbl_user_id'), 'tbl_user', ['id'], unique=False)
-    op.create_index(op.f('ix_tbl_user_mobile_number'), 'tbl_user', ['mobile_number'], unique=False)
+    op.create_index(op.f('ix_tbl_user_mobile_number'), 'tbl_user', ['mobile_number'], unique=True)
     op.create_index(op.f('ix_tbl_user_name'), 'tbl_user', ['name'], unique=False)
     op.create_index(op.f('ix_tbl_user_role_id'), 'tbl_user', ['role_id'], unique=False)
     op.create_table('tbl_category',
@@ -106,7 +106,7 @@ def upgrade() -> None:
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_by', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['state_id'], ['tbl_state.id'], ),
+    sa.ForeignKeyConstraint(['state_id'], ['tbl_state.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_tbl_district_id'), 'tbl_district', ['id'], unique=False)
@@ -237,14 +237,14 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['created_by'], ['tbl_user.id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['current_country_id'], ['tbl_country.id'], ),
-    sa.ForeignKeyConstraint(['current_district_id'], ['tbl_district.id'], ),
-    sa.ForeignKeyConstraint(['current_state_id'], ['tbl_state.id'], ),
-    sa.ForeignKeyConstraint(['native_country_id'], ['tbl_country.id'], ),
-    sa.ForeignKeyConstraint(['native_district_id'], ['tbl_district.id'], ),
-    sa.ForeignKeyConstraint(['native_state_id'], ['tbl_state.id'], ),
+    sa.ForeignKeyConstraint(['current_country_id'], ['tbl_country.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['current_district_id'], ['tbl_district.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['current_state_id'], ['tbl_state.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['native_country_id'], ['tbl_country.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['native_district_id'], ['tbl_district.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['native_state_id'], ['tbl_state.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['updated_by'], ['tbl_user.id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['user_id'], ['tbl_user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['tbl_user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_tbl_user_profile_aadhaar_number'), 'tbl_user_profile', ['aadhaar_number'], unique=False)

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, BigInteger, Date, LargeBinary, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from settings.db import Base
 
@@ -43,14 +43,14 @@ class State(MetaData):
 
     id = Column(Integer, primary_key=True, index=True, nullable=False)
     name = Column(String, nullable=False, index=True)
-    country_id = Column(Integer, ForeignKey("tbl_country.id"), nullable=False)
+    country_id = Column(Integer, ForeignKey("tbl_country.id", ondelete="CASCADE"), nullable=False)
 
 class District(MetaData):
     __tablename__ = "tbl_district"
 
     id = Column(Integer, primary_key=True, index=True, nullable=False)
     name = Column(String, nullable=False, index=True)
-    state_id = Column(Integer, ForeignKey("tbl_state.id"), nullable=False)
+    state_id = Column(Integer, ForeignKey("tbl_state.id", ondelete="CASCADE"), nullable=False)
 
 class User(MetaData):
     __tablename__ = "tbl_user"
@@ -67,11 +67,12 @@ class User(MetaData):
     otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
 
+    role= relationship("Role", backref="users", foreign_keys=[role_id])
 class UserProfile(BaseModel):
     __tablename__ = "tbl_user_profile"
 
     id = Column(Integer, primary_key=True, index=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("tbl_user.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("tbl_user.id", ondelete="CASCADE"), nullable=False)
 
     photo = Column(Text, nullable=True)
     date_of_birth = Column(Date, nullable=False)
@@ -79,15 +80,24 @@ class UserProfile(BaseModel):
     aadhaar_number = Column(String, nullable=True, index=True)
 
     native_address_line = Column(Text, nullable=True, index=True)
-    native_district_id = Column(Integer, ForeignKey("tbl_district.id"), nullable=True, index=True)
-    native_state_id = Column(Integer, ForeignKey("tbl_state.id"), nullable=True, index=True)
-    native_country_id = Column(Integer, ForeignKey("tbl_country.id"), nullable=True, index=True)
+    native_district_id = Column(Integer, ForeignKey("tbl_district.id", ondelete="SET NULL"), nullable=True, index=True)
+    native_state_id = Column(Integer, ForeignKey("tbl_state.id", ondelete="SET NULL"), nullable=True, index=True)
+    native_country_id = Column(Integer, ForeignKey("tbl_country.id", ondelete="SET NULL"), nullable=True, index=True)
 
     current_address_line = Column(Text, nullable=False, index=True)
-    current_district_id = Column(Integer, ForeignKey("tbl_district.id"), nullable=False, index=True)
-    current_state_id = Column(Integer, ForeignKey("tbl_state.id"), nullable=False, index=True)
-    current_country_id = Column(Integer, ForeignKey("tbl_country.id"), nullable=False, index=True)
+    current_district_id = Column(Integer, ForeignKey("tbl_district.id", ondelete="CASCADE"), nullable=False, index=True)
+    current_state_id = Column(Integer, ForeignKey("tbl_state.id", ondelete="CASCADE"), nullable=False, index=True)
+    current_country_id = Column(Integer, ForeignKey("tbl_country.id", ondelete="CASCADE"), nullable=False, index=True)
 
     skills = Column(Text, nullable=True)
     job_type = Column(String, nullable=True)
     language_pref = Column(String, nullable=True)
+
+    user= relationship("User", backref=backref("profile", uselist=False), foreign_keys=[user_id], uselist=False)
+    native_country= relationship("Country", foreign_keys=[native_country_id])
+    native_state= relationship("State", foreign_keys=[native_state_id])
+    native_district= relationship("District", foreign_keys=[native_district_id])
+
+    current_country= relationship("Country", foreign_keys=[current_country_id])
+    current_state= relationship("State", foreign_keys=[current_state_id])
+    current_district= relationship("District", foreign_keys=[current_district_id])

@@ -2,6 +2,18 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Union
 from datetime import date
 
+class RoleSchema(BaseModel):
+    name: str
+    is_default: Optional[bool] = False
+
+class RoleView(BaseModel):
+    id: int
+    name: str
+    is_default: bool
+
+    class Config:
+        from_attributes = True
+        
 class CurUser(BaseModel):
     user_id:int
     role_id:int
@@ -9,13 +21,15 @@ class CurUser(BaseModel):
     email:str    
 
 class UserSchema(BaseModel):
-    role_id: int
+    role_id: int= 3
     name: str
     mobile_code: str
     mobile_number: str
     email: Optional[EmailStr] = None
     password: Optional[str]= None
-    otp_verified: Optional[bool] = False
+
+    class Config:
+        from_attributes = True
 
 class UserProfileSchema(BaseModel):
     user_id: Optional[int] = None
@@ -36,15 +50,18 @@ class UserProfileSchema(BaseModel):
     job_type: Optional[str] = None
     language_pref: Optional[str] = None
 
-class RoleSchema(BaseModel):
-    name: str
-    is_default: Optional[bool] = False
+class UserAddSchema(UserSchema, UserProfileSchema):
+    pass
 
-class RoleView(BaseModel):
+
+class UserView(UserProfileSchema):
     id: int
     name: str
-    is_default: bool
-
+    email: str
+    mobile_number: str
+    mobile_code: str
+    role_id: int
+    role: RoleView
     class Config:
         from_attributes = True
 
@@ -62,7 +79,7 @@ class TokenResponse(BaseModel):
 
 class ResponseModel(BaseModel):
     status: bool
-    details: str
+    details: Union[str, dict, list]
     total_count: int = 0
 
 
@@ -113,7 +130,7 @@ LocationSchema = Union[ViewCountry, ViewState, ViewDistrict]
 class LocationResponseModel(ResponseModel):
     data: Optional[Union[LocationSchema, List[LocationSchema]]] = None
 
-schema= Union[UserSchema, UserProfileSchema]
+schema= Union[UserView, UserSchema, UserProfileSchema]
 
 class ResponseSchema(ResponseModel):
     data: Optional[Union[schema, List[schema]]] = None

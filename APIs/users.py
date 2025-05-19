@@ -1,20 +1,21 @@
-from fastapi import APIRouter, Form, UploadFile, Depends, HTTPException, Query
+from fastapi import APIRouter, Form, UploadFile, Depends, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from pydantic import ValidationError
 
-from constant.constant import root_path, db_limit
+from constant.constant import root_path, db_limit, login_otp_expire_minute
 from settings.db import get_db
 from settings.auth import authenticate, genToken, encrypt, verify
 from settings.config import secret
 from models.users import User, UserProfile, Role, Country, State, District
 from schemas.users import (
-    UserSchema, UserProfileSchema, RoleSchema, RoleView, CurUser,  CreateCountry, ViewCountry,  CreateState, ViewState, CreateDistrict, ViewDistrict,
+    UserSchema, UserProfileSchema, UserAddSchema, RoleSchema, RoleView, CurUser,  CreateCountry, ViewCountry,  CreateState, ViewState, CreateDistrict, ViewDistrict,
     LocationResponseModel, ResponseSchema
 )
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 import json, os, shutil
 
 profile_path= os.path.join("files", "profile")
@@ -25,76 +26,205 @@ try:
 except Exception as e:
     print("Error base file creation: ", e)
 
+proile_url= lambda user_id : secret.profile_url + f"{user_id}/"+ str(datetime.timestamp(datetime.now()))
+
 app = APIRouter(prefix="/user", tags=["Users"])
 
+def verify_location(user_profile: UserProfileSchema, db: Session):
+    if user_profile.native_country_id and not db.query(Country).filter(Country.id == user_profile.native_country_id).first():
+        return ResponseSchema(status=False, details="Country not found")
+    if user_profile.native_state_id and not db.query(State).filter(State.id == user_profile.native_state_id).first():
+        return ResponseSchema(status=False, details="State not found")
+    if user_profile.native_district_id and not db.query(District).filter(District.id == user_profile.native_district_id).first():
+        return ResponseSchema(status=False, details="District not found")
+    
+    if not db.query(Country).filter(Country.id == user_profile.current_country_id).first():
+        return ResponseSchema(status=False, details="Country not found")
+    if not db.query(State).filter(State.id == user_profile.current_state_id).first():
+        return ResponseSchema(status=False, details="State not found")
+    if not db.query(District).filter(District.id == user_profile.current_district_id).first():
+        return ResponseSchema(status=False, details="District not found")
+    return None
+
 @app.post("/register")
-def register_user(user: str= Form(...), profile:UploadFile= None, db: Session= Depends(get_db)):
+def register_user(user: UserAddSchema, db: Session= Depends(get_db)):
+    user_data= UserSchema(**user.model_dump())
+    user_profile= UserProfileSchema(**user.model_dump())
+    # check role 
+    if not db.query(Role).filter(Role.id == user_data.role_id).first():
+        return ResponseSchema(status=False, details="Role not found")
+
+    # check mobile number
+    if db.query(User).filter(User.mobile_number == user_data.mobile_number).first():
+        return ResponseSchema(status=False, details="Mobile number already exists")
+    
+    # check email
+    if db.query(User).filter(User.email == user_data.email).first():
+        return ResponseSchema(status=False, details="Email already exists")
+    
+    verify_location_response= verify_location(user_profile, db)
+    if verify_location_response:
+        return verify_location_response
+    if user_profile.aadhaar_number :
+        if not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
+            return ResponseSchema(status=False, details="Invalid Aadhaar number")
+    if user_data.password:
+        user_data.password= encrypt(user_data.password)
+    db_data= User(**user_data.model_dump())
+    db.add(db_data)
+    db.commit()
+    db.refresh(db_data)
+    
+    user_profile.user_id= db_data.id
+    today= date.today()
+    user_profile.age= today.year - user_profile.date_of_birth.year - ((today.month, today.day) < (user_profile.date_of_birth.month, user_profile.date_of_birth.day))
+    db.add(UserProfile(**user_profile.model_dump()))
+    db.commit()
+
+    return ResponseSchema(status=True, details="User registered successfully")
+
+@app.post("/get_login_otp")
+def login_otp(mobile_no: str, db: Session= Depends(get_db)):
+    user_obj= db.query(User).filter(User.mobile_number == mobile_no)
+    user= user_obj.first()
+    if not user:
+        return ResponseSchema(status=False, details="User not found")
+    otp= "123456"
+    user_obj.update({"otp": otp, "otp_expires_at": datetime.now(timezone.utc) + timedelta(minutes=login_otp_expire_minute)}, synchronize_session=False)
+    db.commit()
+    return { "status": True, "details": "OTP sent successfully", "otp": otp }
+
+@app.post("/login")
+def login(method:str= "email", data:OAuth2PasswordRequestForm=Depends(), db: Session= Depends(get_db)):
+    if method == "email":
+        user= db.query(User).filter(User.email == data.username).first()
+        if not user:
+            return ResponseSchema(status=False, details="User not found")
+        if not verify(data.password, user.password):
+            return ResponseSchema(status=False, details="Invalid credentials")
+    else:
+        user= db.query(User).filter(User.mobile_number == data.username).first()
+        if not user:
+            return ResponseSchema(status=False, details="User not found")
+        if user.otp != int(data.password):
+            return ResponseSchema(status=False, details="Invalid credentials")
+        if user.otp_expires_at < datetime.now(timezone.utc):
+            return ResponseSchema(status=False, details="OTP expired")
+        db.query(User).filter(User.id == user.id).update({"otp": None, "otp_expires_at": None}, synchronize_session=False)
+        db.commit()
+
+    token= genToken(CurUser(user_id= user.id, role_id= user.role_id, name= user.name, email= user.email).model_dump())
+    return { "status": True, "details": "Login successful", "access_token": token, "token_type": "bearer" }
+
+# get current User
+@app.get("/me")
+def get_current_user(db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    user = db.query(User).filter(User.id == curr_user.user_id).first()
+    if not user:
+        return ResponseSchema(status=False, details="User not found")
+    if user.profile.photo:
+        user.profile.photo= proile_url(user.id)
+    data= {**user.__dict__, **user.profile.__dict__, "role": user.role}
+    return ResponseSchema(status=True, details="User found", data=data)
+
+#list users
+@app.get("")
+def list_users( skip: int = 0, limit: int = db_limit, search: Optional[str] = None, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    query = db.query(User)
+    if search:
+        query = query.filter(or_(User.name.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"), User.mobile_number.ilike(f"%{search}%")))
+    query= query.order_by(User.name.asc())
+    if limit:
+        query= query.limit(limit).offset(skip)
+    total= query.count()
+    result= query.all()
+    data= []
+    for user in result:
+        if user.profile.photo:
+            user.profile.photo= proile_url(user.id)
+        data.append({**user.__dict__, **user.profile.__dict__, "role": user.role})
+        
+    # return {"status": True, "details": "Users fetched", "data": data, "total_count": total}
+    return ResponseSchema(status=True, details="Users fetched", data=data, total_count=total)
+
+@app.put("/update/{user_id}")
+def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db: Session= Depends(get_db)):
+    db_user_obj= db.query(User).filter(User.id == user_id)
+    if not db_user_obj.first():
+        return ResponseSchema(status=False, details="User not found")
+    db_user_profile_obj= db.query(UserProfile).filter(UserProfile.user_id == user_id)
+
     try:
         user= json.loads(user)
         user_data= UserSchema(**user)
         user_profile= UserProfileSchema(**user)
-        # return {"status": True, "details": "User created", "data": user_data, "profile": user_profile}
+        del user_data.password
+
         # check mobile number
-        if db.query(User).filter(User.mobile_number == user_data.mobile_number).first():
+        if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
             return ResponseSchema(status=False, details="Mobile number already exists")
         # check email
-        if db.query(User).filter(User.email == user_data.email).first():
+        if db.query(User).filter(User.email == user_data.email, User.id != user_id).first():
             return ResponseSchema(status=False, details="Email already exists")
         
-        if user_profile.native_country_id and not db.query(Country).filter(Country.id == user_profile.native_country_id).first():
-            return ResponseSchema(status=False, details="Country not found")
-        if user_profile.native_state_id and not db.query(State).filter(State.id == user_profile.native_state_id).first():
-            return ResponseSchema(status=False, details="State not found")
-        if user_profile.native_district_id and not db.query(District).filter(District.id == user_profile.native_district_id).first():
-            return ResponseSchema(status=False, details="District not found")
+        verify_location_response= verify_location(user_profile, db)
+        if verify_location_response:
+            return verify_location_response
         
-        if not db.query(Country).filter(Country.id == user_profile.current_country_id).first():
-            return ResponseSchema(status=False, details="Country not found")
-        if not db.query(State).filter(State.id == user_profile.current_state_id).first():
-            return ResponseSchema(status=False, details="State not found")
-        if not db.query(District).filter(District.id == user_profile.current_district_id).first():
-            return ResponseSchema(status=False, details="District not found")
-        if user_profile.aadhaar_number and not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
-            return ResponseSchema(status=False, details="Invalid Aadhaar number")
-        user_data.password= encrypt(user_data.password)
-        db_data= User(**user_data.model_dump())
-        db.add(db_data)
-        db.commit()
-        db.refresh(db_data)
-        user_profile.user_id= db_data.id
+        if user_profile.aadhaar_number :
+            if not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
+                return ResponseSchema(status=False, details="Invalid Aadhaar number")
+        
+        db_user_obj.update(user_data.model_dump(), synchronize_session=False)
+
         if profile:
             if os.path.exists(base_path) == False:
                 os.makedirs(base_path)
-            filename= f"{user_data.name}_{db_data.id}.{profile.filename.split('.')[-1]}"
+            filename= f"{user_data.name}_{user_id}.{profile.filename.split('.')[-1]}"
             with open(os.path.join(base_path, filename), "wb") as f:
                 shutil.copyfileobj(profile.file, f)
             user_profile.photo= os.path.join(profile_path, filename)
 
         today= date.today()
         user_profile.age= today.year - user_profile.date_of_birth.year - ((today.month, today.day) < (user_profile.date_of_birth.month, user_profile.date_of_birth.day))
-        db.add(UserProfile(**user_profile.model_dump()))
+        
+        db_user_profile_obj.update(user_profile.model_dump(), synchronize_session=False)
         db.commit()
     except ValidationError as e:
         return ResponseSchema(status=False, details=e.errors())
     except Exception as e:
         print(e)
         return ResponseSchema(status=False, details="Invalid data")
-    return ResponseSchema(status=True, details="User registered successfully")
+    return ResponseSchema(status=True, details="User updated successfully")
 
-@app.post("/login")
-def login(data:OAuth2PasswordRequestForm=Depends(), db: Session= Depends(get_db)):
-    user= db.query(User).filter(User.email == data.username).first()
+# delete user
+@app.delete("/delete/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    db_user_obj= db.query(User).filter(User.id == user_id)
+    if not db_user_obj.first():
+        return ResponseSchema(status=False, details="User not found")
+    db_user_obj.delete()
+    db.commit()
+    return ResponseSchema(status=True, details="User deleted successfully")
+
+# view profile
+@app.get("/profile/{user_id}/{timestamp}")
+def view_profile(user_id: int, timestamp: str, db: Session = Depends(get_db)):
+    user= db.query(User).filter(User.id == user_id).first()
     if not user:
         return ResponseSchema(status=False, details="User not found")
-    if not verify(data.password, user.password):
-        return ResponseSchema(status=False, details="Invalid credentials")
-    token= genToken(CurUser(user_id= user.id, role_id= user.role_id, name= user.name, email= user.email).model_dump())
-    return { "status": True, "details": "Login successful", "access_token": token, "token_type": "bearer" }
+    user_profile= db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    if not user_profile or user_profile.photo == None:
+        return ResponseSchema(status=False, details="User profile not found")
+    file_name= user_profile.photo.split("/")[-1]
+
+    return FileResponse(user_profile.photo, headers={"Content-Disposition": f"inline; filename={file_name}"}, media_type="image/jpeg", filename=f"{user.name}_{user_id}.jpg")
+
 
 # -------- ROLE --------
 
 # Create Role(s)
-@app.post("/role", response_model=List[RoleView])
+@app.post("/role")
 def create_roles(roles: List[RoleSchema], db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
     role_objs = []
     for role_data in roles:
@@ -102,6 +232,7 @@ def create_roles(roles: List[RoleSchema], db: Session = Depends(get_db), curr_us
             continue  # Skip duplicates
         role_obj = Role(name=role_data.name, is_default=role_data.is_default, created_by=curr_user.user_id)
         db.add(role_obj)
+        db.commit()
         db.refresh(role_obj)
         role_objs.append(role_obj)
     db.commit()
@@ -113,13 +244,15 @@ def list_roles( skip: int = 0, limit: int = db_limit, search: Optional[str] = No
     query = db.query(Role).filter(Role.id != secret.s_admin_role)
     if search:
         query = query.filter(Role.name.ilike(f"%{search}%"))
+    query= query.order_by(Role.id.asc())
+    
     if limit:
         query= query.limit(limit).offset(skip)
     total= query.count()
     return ResponseSchema(status=True, details="Roles fetched", data=query.all(), total_count=total)
 
 # Update Role
-@app.put("/{role_id}", response_model=RoleView)
+@app.put("/role/{role_id}")
 def update_role(role_id: int, role_data: RoleSchema, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
     role_obj = db.query(Role).filter(Role.id == role_id)
     if not role_obj.first():
@@ -131,7 +264,7 @@ def update_role(role_id: int, role_data: RoleSchema, db: Session = Depends(get_d
     return ResponseSchema(status=True, details="Role updated")
 
 # Delete Role
-@app.delete("/{role_id}")
+@app.delete("/role/{role_id}")
 def delete_role(role_id: int, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
     role_obj = db.query(Role).filter(Role.id == role_id).first()
     if not role_obj:
@@ -142,78 +275,132 @@ def delete_role(role_id: int, db: Session = Depends(get_db), curr_user: CurUser 
 
 
 # -------- COUNTRY --------
-@app.post("/country", response_model=LocationResponseModel)
+@app.post("/country")
 def create_countries(payload: List[CreateCountry], db: Session = Depends(get_db), curr_user:CurUser= Depends(authenticate)):
-    countries = [Country(**p.dict()) for p in payload]
+    countries = [Country(**p.model_dump()) for p in payload]
     db.add_all(countries)
     db.commit()
-    return LocationResponseModel(status=True, details="Countries created", total_count=len(countries))
+    return LocationResponseModel(status=True, details="Countries created")
 
 
-@app.get("/countries", response_model=LocationResponseModel)
-def list_countries(
-    db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 10,
-    search: Optional[str] = Query(None)
-):
+@app.get("/country")
+def list_countries( db: Session = Depends(get_db), skip: int = 0, limit: int = db_limit, search: Optional[str] = None):
     query = db.query(Country)
     if search:
         query = query.filter(Country.name.ilike(f"%{search}%"))
     total = query.count()
+    query= query.order_by(Country.name.asc())
     if limit > 0:
         query = query.offset(skip).limit(limit)
     result = query.all()
     return LocationResponseModel(status=True, details="Countries fetched", data=result, total_count=total)
 
+# update country
+@app.put("/country/{country_id}")
+def update_country(country_id: int, country_data: CreateCountry, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    country_obj = db.query(Country).filter(Country.id == country_id)
+    if not country_obj.first():
+        return ResponseSchema(status=False, details="Country not found")
+    
+    country_obj.update(country_data.model_dump(), synchronize_session=False)
+    db.commit()
+
+    return ResponseSchema(status=True, details="Country updated")
+
+# delete country
+@app.delete("/country/{country_id}")
+def delete_country(country_id: int, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    country_obj = db.query(Country).filter(Country.id == country_id).first()
+    if not country_obj:
+        return ResponseSchema(status=False, details="Country not found")
+    db.delete(country_obj)
+    db.commit()
+    return {"status": True, "details": "Country deleted successfully"}
 
 # -------- STATE --------
 @app.post("/state", response_model=LocationResponseModel)
 def create_states(payload: List[CreateState], db: Session = Depends(get_db)):
-    states = [State(**p.dict()) for p in payload]
+    states = [State(**p.model_dump()) for p in payload]
     db.add_all(states)
     db.commit()
-    return LocationResponseModel(status=True, details="States created", total_count=len(states))
+    return LocationResponseModel(status=True, details="States created")
 
-
-@app.get("/states", response_model=LocationResponseModel)
-def list_states(
-    db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 10,
-    search: Optional[str] = Query(None)
-):
+@app.get("/state")
+def list_states( skip: int = 0, limit: int = db_limit, country_id: int = None, db: Session = Depends(get_db), search: Optional[str] = None):
     query = db.query(State)
     if search:
         query = query.filter(State.name.ilike(f"%{search}%"))
+    if country_id:
+        query = query.filter(State.country_id == country_id)
     total = query.count()
+    query= query.order_by(State.name.asc())
     if limit > 0:
         query = query.offset(skip).limit(limit)
     result = query.all()
     return LocationResponseModel(status=True, details="States fetched", data=result, total_count=total)
 
+# update state
+@app.put("/state/{state_id}")
+def update_state(state_id: int, state_data: CreateState, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    state_obj = db.query(State).filter(State.id == state_id)
+    if not state_obj.first():
+        return ResponseSchema(status=False, details="State not found")
+    
+    state_obj.update(state_data.model_dump(), synchronize_session=False)
+    db.commit()
+
+    return ResponseSchema(status=True, details="State updated")
+
+# delete state
+@app.delete("/state/{state_id}")
+def delete_state(state_id: int, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    state_obj = db.query(State).filter(State.id == state_id).first()
+    if not state_obj:
+        return ResponseSchema(status=False, details="State not found")
+    db.delete(state_obj)
+    db.commit()
+    return {"status": True, "details": "State deleted successfully"}
 
 # -------- DISTRICT --------
-@app.post("/district", response_model=LocationResponseModel)
+@app.post("/district")
 def create_districts(payload: List[CreateDistrict], db: Session = Depends(get_db)):
-    districts = [District(**p.dict()) for p in payload]
+    districts = [District(**p.model_dump()) for p in payload]
     db.add_all(districts)
     db.commit()
-    return LocationResponseModel(status=True, details="Districts created", total_count=len(districts))
+    return LocationResponseModel(status=True, details="Districts created")
 
-
-@app.get("/districts", response_model=LocationResponseModel)
-def list_districts(
-    db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 10,
-    search: Optional[str] = Query(None)
-):
+@app.get("/district")
+def list_districts( skip: int = 0, limit: int = db_limit, state_id: int = None, db: Session = Depends(get_db), search: Optional[str] = None):
     query = db.query(District)
     if search:
         query = query.filter(District.name.ilike(f"%{search}%"))
+    if state_id:
+        query = query.filter(District.state_id == state_id)
     total = query.count()
+    query= query.order_by(District.name.asc())
     if limit > 0:
         query = query.offset(skip).limit(limit)
     result = query.all()
     return LocationResponseModel(status=True, details="Districts fetched", data=result, total_count=total)
+
+# update district
+@app.put("/district/{district_id}")
+def update_district(district_id: int, district_data: CreateDistrict, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
+    district_obj = db.query(District).filter(District.id == district_id)
+    if not district_obj.first():
+        return ResponseSchema(status=False, details="District not found")
+    
+    district_obj.update(district_data.model_dump(), synchronize_session=False)
+    db.commit()
+
+    return ResponseSchema(status=True, details="District updated")
+
+# delete district
+@app.delete("/district/{district_id}")
+def delete_district(district_id: int, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):    
+    district_obj = db.query(District).filter(District.id == district_id).first()
+    if not district_obj:
+        return ResponseSchema(status=False, details="District not found")
+    db.delete(district_obj)
+    db.commit()
+    return {"status": True, "details": "District deleted successfully"}
