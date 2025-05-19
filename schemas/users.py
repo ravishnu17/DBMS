@@ -18,15 +18,15 @@ class CurUser(BaseModel):
     user_id:int
     role_id:int
     name:str
-    email:str    
+    email:Optional[EmailStr]=None    
 
 class UserSchema(BaseModel):
-    role_id: int= 3
+    # role_id: int= 3
     name: str
     mobile_code: str
     mobile_number: str
     email: Optional[EmailStr] = None
-    password: Optional[str]= None
+    # password: Optional[str]= None
 
     class Config:
         from_attributes = True
@@ -50,14 +50,14 @@ class UserProfileSchema(BaseModel):
     job_type: Optional[str] = None
     language_pref: Optional[str] = None
 
-class UserAddSchema(UserSchema, UserProfileSchema):
+class UserRegisterSchema(UserSchema, UserProfileSchema):
     pass
 
 
 class UserView(UserProfileSchema):
     id: int
     name: str
-    email: str
+    email: Optional[EmailStr] = None
     mobile_number: str
     mobile_code: str
     role_id: int
@@ -65,17 +65,10 @@ class UserView(UserProfileSchema):
     class Config:
         from_attributes = True
 
-class LoginRequestSchema(BaseModel):
-    email: EmailStr
-
 class VerifyOtpSchema(BaseModel):
-    email: EmailStr
+    mobile_code: str
+    mobile_number: str
     otp: int
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
 
 class ResponseModel(BaseModel):
     status: bool
@@ -130,7 +123,7 @@ LocationSchema = Union[ViewCountry, ViewState, ViewDistrict]
 class LocationResponseModel(ResponseModel):
     data: Optional[Union[LocationSchema, List[LocationSchema]]] = None
 
-schema= Union[UserView, UserSchema, UserProfileSchema]
+schema= Union[UserView]
 
 class ResponseSchema(ResponseModel):
     data: Optional[Union[schema, List[schema]]] = None

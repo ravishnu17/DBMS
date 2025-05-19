@@ -13,6 +13,7 @@ class Secret(BaseSettings):
     s_admin_role:int
     s_admin_id:int
     s_key:str
+    migrant_role:int
     profile_url: str
     model_config= SettingsConfigDict(env_file=".env")
     

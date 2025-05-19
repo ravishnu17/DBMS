@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from pydantic import ValidationError
+from random import randrange
 
 from constant.constant import root_path, db_limit, login_otp_expire_minute
 from settings.db import get_db
@@ -12,7 +13,7 @@ from settings.auth import authenticate, genToken, encrypt, verify
 from settings.config import secret
 from models.users import User, UserProfile, Role, Country, State, District
 from schemas.users import (
-    UserSchema, UserProfileSchema, UserAddSchema, RoleSchema, RoleView, CurUser,  CreateCountry, ViewCountry,  CreateState, ViewState, CreateDistrict, ViewDistrict,
+    UserSchema, UserProfileSchema, UserRegisterSchema, RoleSchema, VerifyOtpSchema, CurUser,  CreateCountry,  CreateState, CreateDistrict,
     LocationResponseModel, ResponseSchema
 )
 from datetime import datetime, date, timedelta, timezone
@@ -47,12 +48,9 @@ def verify_location(user_profile: UserProfileSchema, db: Session):
     return None
 
 @app.post("/register")
-def register_user(user: UserAddSchema, db: Session= Depends(get_db)):
+def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
     user_data= UserSchema(**user.model_dump())
     user_profile= UserProfileSchema(**user.model_dump())
-    # check role 
-    if not db.query(Role).filter(Role.id == user_data.role_id).first():
-        return ResponseSchema(status=False, details="Role not found")
 
     # check mobile number
     if db.query(User).filter(User.mobile_number == user_data.mobile_number).first():
@@ -68,9 +66,9 @@ def register_user(user: UserAddSchema, db: Session= Depends(get_db)):
     if user_profile.aadhaar_number :
         if not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
             return ResponseSchema(status=False, details="Invalid Aadhaar number")
-    if user_data.password:
-        user_data.password= encrypt(user_data.password)
-    db_data= User(**user_data.model_dump())
+    # if user_data.password:
+    #     user_data.password= encrypt(user_data.password)
+    db_data= User(**user_data.model_dump(), role_id=secret.migrant_role)
     db.add(db_data)
     db.commit()
     db.refresh(db_data)
@@ -84,35 +82,41 @@ def register_user(user: UserAddSchema, db: Session= Depends(get_db)):
     return ResponseSchema(status=True, details="User registered successfully")
 
 @app.post("/get_login_otp")
-def login_otp(mobile_no: str, db: Session= Depends(get_db)):
-    user_obj= db.query(User).filter(User.mobile_number == mobile_no)
+def login_otp(mobile_code: str, mobile_no: str, db: Session= Depends(get_db)):
+    user_obj= db.query(User).filter(User.mobile_code == mobile_code, User.mobile_number == mobile_no)
     user= user_obj.first()
     if not user:
         return ResponseSchema(status=False, details="User not found")
-    otp= "123456"
+    otp= randrange(100000, 999999)
     user_obj.update({"otp": otp, "otp_expires_at": datetime.now(timezone.utc) + timedelta(minutes=login_otp_expire_minute)}, synchronize_session=False)
     db.commit()
     return { "status": True, "details": "OTP sent successfully", "otp": otp }
 
 @app.post("/login")
-def login(method:str= "email", data:OAuth2PasswordRequestForm=Depends(), db: Session= Depends(get_db)):
-    if method == "email":
-        user= db.query(User).filter(User.email == data.username).first()
-        if not user:
-            return ResponseSchema(status=False, details="User not found")
-        if not verify(data.password, user.password):
-            return ResponseSchema(status=False, details="Invalid credentials")
-    else:
-        user= db.query(User).filter(User.mobile_number == data.username).first()
-        if not user:
-            return ResponseSchema(status=False, details="User not found")
-        if user.otp != int(data.password):
-            return ResponseSchema(status=False, details="Invalid credentials")
-        if user.otp_expires_at < datetime.now(timezone.utc):
-            return ResponseSchema(status=False, details="OTP expired")
-        db.query(User).filter(User.id == user.id).update({"otp": None, "otp_expires_at": None}, synchronize_session=False)
-        db.commit()
+def login( data:OAuth2PasswordRequestForm=Depends(), db: Session= Depends(get_db)):
+    user= db.query(User).filter(User.email == data.username).first()
+    if not user:
+        return ResponseSchema(status=False, details="User not found")
+    if not verify(data.password, user.password):
+        return ResponseSchema(status=False, details="Invalid credentials")
 
+    token= genToken(CurUser(user_id= user.id, role_id= user.role_id, name= user.name, email= user.email).model_dump())
+    return { "status": True, "details": "Login successful", "access_token": token, "token_type": "bearer" }
+
+@app.post("/mobile_login")
+def mobile_login(data:VerifyOtpSchema, db: Session= Depends(get_db)):
+    user= db.query(User).filter(User.mobile_number == data.mobile_number, User.mobile_code == data.mobile_code).first()
+    if not user:
+        return ResponseSchema(status=False, details="User not found")
+    if not user.otp:
+        return ResponseSchema(status=False, details="OTP not sent")
+
+    if int(user.otp) != int(data.otp):
+        return ResponseSchema(status=False, details="Invalid credentials")
+    if user.otp_expires_at < datetime.now(timezone.utc):
+        return ResponseSchema(status=False, details="OTP expired")
+    db.query(User).filter(User.id == user.id).update({"otp": None, "otp_expires_at": None}, synchronize_session=False)
+    db.commit()
     token= genToken(CurUser(user_id= user.id, role_id= user.role_id, name= user.name, email= user.email).model_dump())
     return { "status": True, "details": "Login successful", "access_token": token, "token_type": "bearer" }
 
@@ -158,7 +162,6 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         user= json.loads(user)
         user_data= UserSchema(**user)
         user_profile= UserProfileSchema(**user)
-        del user_data.password
 
         # check mobile number
         if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
