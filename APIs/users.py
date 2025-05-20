@@ -6,6 +6,7 @@ from sqlalchemy import or_
 from typing import List, Optional
 from pydantic import ValidationError
 from random import randrange
+from sqlalchemy.exc import SQLAlchemyError
 
 from constant.constant import root_path, db_limit, login_otp_expire_minute
 from settings.db import get_db
@@ -32,11 +33,12 @@ proile_url= lambda user_id : secret.profile_url + f"{user_id}/"+ str(datetime.ti
 app = APIRouter(prefix="/user", tags=["Users"])
 
 def verify_location(user_profile: UserProfileSchema, db: Session):
-    if user_profile.native_country_id and not db.query(Country).filter(Country.id == user_profile.native_country_id).first():
+    print(user_profile.native_country_id)
+    if user_profile.native_country_id != None and not db.query(Country).filter(Country.id == user_profile.native_country_id).first():
         return ResponseSchema(status=False, details="Country not found")
-    if user_profile.native_state_id and not db.query(State).filter(State.id == user_profile.native_state_id).first():
+    if user_profile.native_state_id != None and not db.query(State).filter(State.id == user_profile.native_state_id).first():
         return ResponseSchema(status=False, details="State not found")
-    if user_profile.native_district_id and not db.query(District).filter(District.id == user_profile.native_district_id).first():
+    if user_profile.native_district_id != None and not db.query(District).filter(District.id == user_profile.native_district_id).first():
         return ResponseSchema(status=False, details="District not found")
     
     if not db.query(Country).filter(Country.id == user_profile.current_country_id).first():
@@ -51,8 +53,10 @@ def verify_location(user_profile: UserProfileSchema, db: Session):
 def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
     user_data= UserSchema(**user.model_dump())
     user_profile= UserProfileSchema(**user.model_dump())
-
+    del user_profile.photo
     # check mobile number
+    if user_data.mobile_number.isdigit() == False:
+        return ResponseSchema(status=False, details="Invalid mobile number")
     if db.query(User).filter(User.mobile_number == user_data.mobile_number).first():
         return ResponseSchema(status=False, details="Mobile number already exists")
     
@@ -72,12 +76,16 @@ def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
     db.add(db_data)
     db.commit()
     db.refresh(db_data)
-    
-    user_profile.user_id= db_data.id
-    today= date.today()
-    user_profile.age= today.year - user_profile.date_of_birth.year - ((today.month, today.day) < (user_profile.date_of_birth.month, user_profile.date_of_birth.day))
-    db.add(UserProfile(**user_profile.model_dump()))
-    db.commit()
+    try:
+        user_profile.user_id= db_data.id
+        today= date.today()
+        user_profile.age= today.year - user_profile.date_of_birth.year - ((today.month, today.day) < (user_profile.date_of_birth.month, user_profile.date_of_birth.day))
+        db.add(UserProfile(**user_profile.model_dump()))
+        db.commit()
+    except SQLAlchemyError as e:
+        db.query(User).filter(User.id == db_data.id).delete()
+        db.commit()
+        return ResponseSchema(status=False, details="Something went wrong")
 
     return ResponseSchema(status=True, details="User registered successfully")
 
@@ -144,7 +152,7 @@ def list_users( skip: int = 0, limit: int = db_limit, search: Optional[str] = No
     result= query.all()
     data= []
     for user in result:
-        if user.profile.photo:
+        if user.profile and user.profile.photo:
             user.profile.photo= proile_url(user.id)
         data.append({**user.__dict__, **user.profile.__dict__, "role": user.role})
         
@@ -220,6 +228,8 @@ def view_profile(user_id: int, timestamp: str, db: Session = Depends(get_db)):
     if not user_profile or user_profile.photo == None:
         return ResponseSchema(status=False, details="User profile not found")
     file_name= user_profile.photo.split("/")[-1]
+    if not os.path.exists(os.path.join(base_path, file_name)):
+        return ResponseSchema(status=False, details="File not found")
 
     return FileResponse(user_profile.photo, headers={"Content-Disposition": f"inline; filename={file_name}"}, media_type="image/jpeg", filename=f"{user.name}_{user_id}.jpg")
 
