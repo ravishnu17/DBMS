@@ -1,0 +1,306 @@
+{
+    "roles": [
+        "Super Admin",
+        "Admin",
+        "Migrant"
+    ],
+    "admin": {
+        "otp_verified": true,
+        "name": "Application Admin",
+        "date_of_birth": "2025-05-17",
+        "current_address_line": "Chennai, Tamilnadu",
+        "current_district_id": 2,
+        "current_state_id": 23,
+        "current_country_id": 7,
+        "mobile_code": "91",
+        "mobile_number": "9876543210",
+        "email": "admin@gmail.com"
+    },
+    "category": [
+        { "name": "Shelter", "type":"SERVICE", "available": true },
+        { "name": "Legal", "type":"SERVICE", "available": true },
+        { "name": "Healthcare", "type":"SERVICE", "available": true },
+        { "name": "Skill Training", "type":"SERVICE", "available": true },
+        { "name": "Food", "type":"HELP", "available": true },
+        { "name": "Shelter", "type":"HELP", "available": true },
+        { "name": "Legal", "type":"HELP", "available": true },
+        { "name": "Health", "type":"HELP", "available": true }
+
+    ],
+    "country": [
+        "Australia",
+        "Bangladesh",
+        "Brazil",
+        "Canada",
+        "France",
+        "Germany",
+        "India",
+        "Japan",
+        "Nepal",
+        "United States"
+    ],
+    "states": [
+        {
+            "country_id": 7,
+            "name": "Andhra Pradesh"
+        },
+        {
+            "country_id": 7,
+            "name": "Arunachal Pradesh"
+        },
+        {
+            "country_id": 7,
+            "name": "Assam"
+        },
+        {
+            "country_id": 7,
+            "name": "Bihar"
+        },
+        {
+            "country_id": 7,
+            "name": "Chhattisgarh"
+        },
+        {
+            "country_id": 7,
+            "name": "Goa"
+        },
+        {
+            "country_id": 7,
+            "name": "Gujarat"
+        },
+        {
+            "country_id": 7,
+            "name": "Haryana"
+        },
+        {
+            "country_id": 7,
+            "name": "Himachal Pradesh"
+        },
+        {
+            "country_id": 7,
+            "name": "Jharkhand"
+        },
+        {
+            "country_id": 7,
+            "name": "Karnataka"
+        },
+        {
+            "country_id": 7,
+            "name": "Kerala"
+        },
+        {
+            "country_id": 7,
+            "name": "Madhya Pradesh"
+        },
+        {
+            "country_id": 7,
+            "name": "Maharashtra"
+        },
+        {
+            "country_id": 7,
+            "name": "Manipur"
+        },
+        {
+            "country_id": 7,
+            "name": "Meghalaya"
+        },
+        {
+            "country_id": 7,
+            "name": "Mizoram"
+        },
+        {
+            "country_id": 7,
+            "name": "Nagaland"
+        },
+        {
+            "country_id": 7,
+            "name": "Odisha"
+        },
+        {
+            "country_id": 7,
+            "name": "Punjab"
+        },
+        {
+            "country_id": 7,
+            "name": "Rajasthan"
+        },
+        {
+            "country_id": 7,
+            "name": "Sikkim"
+        },
+        {
+            "country_id": 7,
+            "name": "Tamil Nadu"
+        },
+        {
+            "country_id": 7,
+            "name": "Telangana"
+        },
+        {
+            "country_id": 7,
+            "name": "Tripura"
+        },
+        {
+            "country_id": 7,
+            "name": "Uttar Pradesh"
+        },
+        {
+            "country_id": 7,
+            "name": "Uttarakhand"
+        },
+        {
+            "country_id": 7,
+            "name": "West Bengal"
+        }
+    ],
+    "districts": [
+        {
+            "state_id": 23,
+            "name": "Ariyalur"
+        },
+        {
+            "state_id": 23,
+            "name": "Chengalpattu"
+        },
+        {
+            "state_id": 23,
+            "name": "Chennai"
+        },
+        {
+            "state_id": 23,
+            "name": "Coimbatore"
+        },
+        {
+            "state_id": 23,
+            "name": "Cuddalore"
+        },
+        {
+            "state_id": 23,
+            "name": "Dharmapuri"
+        },
+        {
+            "state_id": 23,
+            "name": "Dindigul"
+        },
+        {
+            "state_id": 23,
+            "name": "Erode"
+        },
+        {
+            "state_id": 23,
+            "name": "Kallakurichi"
+        },
+        {
+            "state_id": 23,
+            "name": "Kanchipuram"
+        },
+        {
+            "state_id": 23,
+            "name": "Kanyakumari"
+        },
+        {
+            "state_id": 23,
+            "name": "Karur"
+        },
+        {
+            "state_id": 23,
+            "name": "Krishnagiri"
+        },
+        {
+            "state_id": 23,
+            "name": "Madurai"
+        },
+        {
+            "state_id": 23,
+            "name": "Nagapattinam"
+        },
+        {
+            "state_id": 23,
+            "name": "Namakkal"
+        },
+        {
+            "state_id": 23,
+            "name": "Nilgiris"
+        },
+        {
+            "state_id": 23,
+            "name": "Perambalur"
+        },
+        {
+            "state_id": 23,
+            "name": "Pudukkottai"
+        },
+        {
+            "state_id": 23,
+            "name": "Ramanathapuram"
+        },
+        {
+            "state_id": 23,
+            "name": "Ranipet"
+        },
+        {
+            "state_id": 23,
+            "name": "Salem"
+        },
+        {
+            "state_id": 23,
+            "name": "Sivaganga"
+        },
+        {
+            "state_id": 23,
+            "name": "Tenkasi"
+        },
+        {
+            "state_id": 23,
+            "name": "Thanjavur"
+        },
+        {
+            "state_id": 23,
+            "name": "Theni"
+        },
+        {
+            "state_id": 23,
+            "name": "Thoothukudi"
+        },
+        {
+            "state_id": 23,
+            "name": "Tiruchirappalli"
+        },
+        {
+            "state_id": 23,
+            "name": "Tirunelveli"
+        },
+        {
+            "state_id": 23,
+            "name": "Tirupathur"
+        },
+        {
+            "state_id": 23,
+            "name": "Tiruppur"
+        },
+        {
+            "state_id": 23,
+            "name": "Tiruvallur"
+        },
+        {
+            "state_id": 23,
+            "name": "Tiruvannamalai"
+        },
+        {
+            "state_id": 23,
+            "name": "Tiruvarur"
+        },
+        {
+            "state_id": 23,
+            "name": "Vellore"
+        },
+        {
+            "state_id": 23,
+            "name": "Viluppuram"
+        },
+        {
+            "state_id": 23,
+            "name": "Virudhunagar"
+        }
+    ]
+}
