@@ -49,13 +49,14 @@ def initial_load():
             if db.query(User).count() == 0:
                 temp= initial_data['admin']
                 user= UserSchema(**temp)
+                user.role_id= secret.s_admin_role
                 password= encrypt(secret.s_key)
                 user_profile= UserProfileSchema(**temp)
                 user_profile.user_id= secret.s_admin_id
                 dob = datetime.strptime(temp['date_of_birth'], '%Y-%m-%d').date()
                 today= date.today()
                 user_profile.age= today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                db.add(User(**user.model_dump(), password=password, role_id= secret.s_admin_role))
+                db.add(User(**user.model_dump(), password=password))
                 db.add(UserProfile(**user_profile.model_dump()))
                 db.commit()
                 print('\n----- User data loaded! -----')
