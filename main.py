@@ -5,9 +5,11 @@ from sqlalchemy import inspect
 from settings.db import session_local, engine
 from models.users import Role, User, UserProfile, Country, State, District
 from schemas.users import UserSchema, UserProfileSchema
+from models.service import Category
+from schemas.services import CategorySchema
 from settings.config import secret
 from settings.auth import encrypt
-from APIs import users
+from APIs import users, services
 from datetime import datetime, date
 import json
 
@@ -57,6 +59,12 @@ def initial_load():
                 db.add(UserProfile(**user_profile.model_dump()))
                 db.commit()
                 print('\n----- User data loaded! -----')
+        if inspect(engine).has_table('tbl_category'):
+            if db.query(Category).count() == 0:
+                for category in initial_data['category']:
+                    db.add(Category(**CategorySchema(**category).model_dump(), created_by= secret.s_admin_id, updated_by= secret.s_admin_id))
+                db.commit()
+                print('\n----- Category data loaded! -----')
         db.close()
     except Exception as e:
         print('\n----- Connection failed! ERROR : ', e)
@@ -88,4 +96,6 @@ def root():
 
 # include api routes with main app
 app.include_router(users.app)
+app.include_router(services.category_router)
+app.include_router(services.service_router)
 

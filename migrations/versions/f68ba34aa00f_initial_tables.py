@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from models.service import category_type_sql_enum, RSVP_status_sql_enum, help_request_status_sql_enum, reminder_type_sql_enum
 
 # revision identifiers, used by Alembic.
 revision: str = 'f68ba34aa00f'
@@ -84,7 +84,7 @@ def upgrade() -> None:
     op.create_table('tbl_category',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('type', sa.Enum('SERVICE', 'ISSUE', 'BOTH', name='category_type'), nullable=False),
+    sa.Column('type', category_type_sql_enum , nullable=False),
     sa.Column('active', sa.Boolean(), server_default='True', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=True),
@@ -159,7 +159,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('event_id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('YES', 'NO', 'MAYBE', name='rsvp_status'), nullable=False),
+    sa.Column('status', RSVP_status_sql_enum, nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('status_updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['event_id'], ['tbl_event.id'], ),
@@ -173,7 +173,7 @@ def upgrade() -> None:
     sa.Column('assigned_staff_id', sa.Integer(), nullable=True),
     sa.Column('category_id', sa.Integer(), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'CLOSED', name='help_request_status'), nullable=False),
+    sa.Column('status', help_request_status_sql_enum, nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('request_closed_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['assigned_staff_id'], ['tbl_user.id'], ),
@@ -185,7 +185,7 @@ def upgrade() -> None:
     op.create_table('tbl_notification_reminder',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('event_id', sa.Integer(), nullable=False),
-    sa.Column('reminder_type', sa.Enum('_30_MIN', '_1_HR', '_2_HR', '_1_DAY', name='reminder_type'), nullable=False),
+    sa.Column('reminder_type', reminder_type_sql_enum, nullable=False),
     sa.Column('message', sa.Text(), nullable=False),
     sa.Column('sent_status', sa.Boolean(), nullable=False),
     sa.Column('scheduled_time', sa.DateTime(), nullable=False),
@@ -321,8 +321,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_tbl_country_name'), table_name='tbl_country')
     op.drop_index(op.f('ix_tbl_country_id'), table_name='tbl_country')
     op.drop_table('tbl_country')
-    op.execute("DROP TYPE IF EXISTS category_type")
-    op.execute("DROP TYPE IF EXISTS rsvp_status")
-    op.execute("DROP TYPE IF EXISTS help_request_status")
-    op.execute("DROP TYPE IF EXISTS reminder_type")
+
+    category_type_sql_enum.drop(op.get_bind(), checkfirst=True)
+    RSVP_status_sql_enum.drop(op.get_bind(), checkfirst=True)
+    help_request_status_sql_enum.drop(op.get_bind(), checkfirst=True)
+    reminder_type_sql_enum.drop(op.get_bind(), checkfirst=True)
+    
     # ### end Alembic commands ###

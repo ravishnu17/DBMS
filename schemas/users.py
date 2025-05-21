@@ -21,7 +21,7 @@ class CurUser(BaseModel):
     email:Optional[EmailStr]=None    
 
 class UserSchema(BaseModel):
-    # role_id: int= 3
+    role_id: int= 3
     name: str
     mobile_code: str
     mobile_number: str
@@ -51,6 +51,7 @@ class UserProfileSchema(BaseModel):
     language_pref: Optional[str] = None
 
 class UserRegisterSchema(UserSchema, UserProfileSchema):
+    password: Optional[str] = None
     pass
 
 

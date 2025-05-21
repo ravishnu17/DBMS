@@ -16,6 +16,17 @@
         "mobile_number": "9876543210",
         "email": "admin@gmail.com"
     },
+    "category": [
+        { "name": "Shelter", "type":"SERVICE", "available": true },
+        { "name": "Legal", "type":"SERVICE", "available": true },
+        { "name": "Healthcare", "type":"SERVICE", "available": true },
+        { "name": "Skill Training", "type":"SERVICE", "available": true },
+        { "name": "Food", "type":"HELP", "available": true },
+        { "name": "Shelter", "type":"HELP", "available": true },
+        { "name": "Legal", "type":"HELP", "available": true },
+        { "name": "Health", "type":"HELP", "available": true }
+
+    ],
     "country": [
         "Australia",
         "Bangladesh",

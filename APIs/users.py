@@ -61,8 +61,9 @@ def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
         return ResponseSchema(status=False, details="Mobile number already exists")
     
     # check email
-    if db.query(User).filter(User.email == user_data.email).first():
-        return ResponseSchema(status=False, details="Email already exists")
+    if user_data.email:
+        if db.query(User).filter(User.email == user_data.email).first():
+            return ResponseSchema(status=False, details="Email already exists")
     
     verify_location_response= verify_location(user_profile, db)
     if verify_location_response:
@@ -70,9 +71,9 @@ def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
     if user_profile.aadhaar_number :
         if not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
             return ResponseSchema(status=False, details="Invalid Aadhaar number")
-    # if user_data.password:
-    #     user_data.password= encrypt(user_data.password)
-    db_data= User(**user_data.model_dump(), role_id=secret.migrant_role)
+    if user.password:
+        user.password= encrypt(user.password)
+    db_data= User(**user_data.model_dump(), password= user.password if user.password else None)
     db.add(db_data)
     db.commit()
     db.refresh(db_data)
@@ -142,7 +143,7 @@ def get_current_user(db: Session = Depends(get_db), curr_user: CurUser = Depends
 #list users
 @app.get("")
 def list_users( skip: int = 0, limit: int = db_limit, search: Optional[str] = None, db: Session = Depends(get_db), curr_user: CurUser = Depends(authenticate)):
-    query = db.query(User)
+    query = db.query(User).filter(User.id != secret.s_admin_id)
     if search:
         query = query.filter(or_(User.name.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"), User.mobile_number.ilike(f"%{search}%")))
     query= query.order_by(User.name.asc())
@@ -257,7 +258,7 @@ def list_roles( skip: int = 0, limit: int = db_limit, search: Optional[str] = No
     query = db.query(Role).filter(Role.id != secret.s_admin_role)
     if search:
         query = query.filter(Role.name.ilike(f"%{search}%"))
-    query= query.order_by(Role.id.asc())
+    query= query.order_by(Role.name.asc())
     
     if limit:
         query= query.limit(limit).offset(skip)
