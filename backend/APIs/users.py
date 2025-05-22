@@ -33,7 +33,6 @@ proile_url= lambda user_id : secret.profile_url + f"{user_id}/"+ str(datetime.ti
 app = APIRouter(prefix="/user", tags=["Users"])
 
 def verify_location(user_profile: UserProfileSchema, db: Session):
-    print(user_profile.native_country_id)
     if user_profile.native_country_id != None and not db.query(Country).filter(Country.id == user_profile.native_country_id).first():
         return ResponseSchema(status=False, details="Country not found")
     if user_profile.native_state_id != None and not db.query(State).filter(State.id == user_profile.native_state_id).first():
@@ -178,8 +177,9 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
             return ResponseSchema(status=False, details="Mobile number already exists")
         # check email
-        if db.query(User).filter(User.email == user_data.email, User.id != user_id).first():
-            return ResponseSchema(status=False, details="Email already exists")
+        if user_data.email:
+            if db.query(User).filter(User.email == user_data.email, User.id != user_id).first():
+                return ResponseSchema(status=False, details="Email already exists")
         
         verify_location_response= verify_location(user_profile, db)
         if verify_location_response:
