@@ -18,58 +18,7 @@ class CurUser(BaseModel):
     user_id:int
     role_id:int
     name:str
-    email:Optional[EmailStr]=None    
-
-class UserSchema(BaseModel):
-    role_id: int= 3
-    name: str
-    mobile_code: str
-    mobile_number: str
-    email: Optional[EmailStr] = None
-    # password: Optional[str]= None
-
-    class Config:
-        from_attributes = True
-
-class UserProfileSchema(BaseModel):
-    user_id: Optional[int] = None
-    date_of_birth: date
-    photo: Optional[str] = None
-    age: Optional[int] = None
-    aadhaar_number: Optional[str] = None
-    native_address_line: Optional[str] = None
-    native_district_id: Optional[int] = None
-    native_state_id: Optional[int] = None
-    native_country_id: Optional[int] = None
-    current_address_line: str
-    current_district_id: int
-    current_state_id: int
-    current_country_id: int
-
-    skills: Optional[str] = None
-    job_type: Optional[str] = None
-    language_pref: Optional[str] = None
-
-class UserRegisterSchema(UserSchema, UserProfileSchema):
-    password: Optional[str] = None
-    pass
-
-
-class UserView(UserProfileSchema):
-    id: int
-    name: str
-    email: Optional[EmailStr] = None
-    mobile_number: str
-    mobile_code: str
-    role_id: int
-    role: RoleView
-    class Config:
-        from_attributes = True
-
-class VerifyOtpSchema(BaseModel):
-    mobile_code: str
-    mobile_number: str
-    otp: int
+    email:Optional[EmailStr]=None
 
 class ResponseModel(BaseModel):
     status: bool
@@ -123,6 +72,65 @@ LocationSchema = Union[ViewCountry, ViewState, ViewDistrict]
 
 class LocationResponseModel(ResponseModel):
     data: Optional[Union[LocationSchema, List[LocationSchema]]] = None
+
+class UserSchema(BaseModel):
+    role_id: int= 3
+    name: str
+    mobile_code: str
+    mobile_number: str
+    email: Optional[EmailStr] = None
+    # password: Optional[str]= None
+
+    class Config:
+        from_attributes = True
+
+class UserProfileSchema(BaseModel):
+    user_id: Optional[int] = None
+    date_of_birth: date
+    photo: Optional[str] = None
+    age: Optional[int] = None
+    aadhaar_number: Optional[str] = None
+    native_address_line: Optional[str] = None
+    native_district_id: Optional[int] = None
+    native_state_id: Optional[int] = None
+    native_country_id: Optional[int] = None
+    current_address_line: str
+    current_district_id: int
+    current_state_id: int
+    current_country_id: int
+
+    skills: Optional[str] = None
+    job_type: Optional[str] = None
+    language_pref: Optional[str] = None
+
+    native_country: Optional[ViewCountry] = None
+    native_state: Optional[ViewState] = None
+    native_district: Optional[ViewDistrict] = None
+    current_country: Optional[ViewCountry] = None
+    current_state: Optional[ViewState] = None
+    current_district: Optional[ViewDistrict] = None
+
+class UserRegisterSchema(UserSchema, UserProfileSchema):
+    password: Optional[str] = None
+    pass
+
+
+class UserView(UserProfileSchema):
+    id: int
+    name: str
+    email: Optional[EmailStr] = None
+    mobile_number: str
+    mobile_code: str
+    role_id: int
+    role: RoleView
+    class Config:
+        from_attributes = True
+
+class VerifyOtpSchema(BaseModel):
+    mobile_code: str
+    mobile_number: str
+    otp: int
+
 
 schema= Union[UserView]
 

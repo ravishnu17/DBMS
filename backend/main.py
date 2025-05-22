@@ -99,4 +99,5 @@ def root():
 app.include_router(users.app)
 app.include_router(services.category_router)
 app.include_router(services.service_router)
+app.include_router(services.event_router)
 

@@ -136,6 +136,13 @@ def get_current_user(db: Session = Depends(get_db), curr_user: CurUser = Depends
         return ResponseSchema(status=False, details="User not found")
     if user.profile.photo:
         user.profile.photo= proile_url(user.id)
+        user.native_country= user.profile.native_country
+        user.current_country= user.profile.current_country
+        user.native_state= user.profile.native_state
+        user.current_state= user.profile.current_state
+        user.native_district= user.profile.native_district
+        user.current_district= user.profile.current_district
+
     data= {**user.__dict__, **user.profile.__dict__, "role": user.role}
     return ResponseSchema(status=True, details="User found", data=data)
 
@@ -154,6 +161,14 @@ def list_users( skip: int = 0, limit: int = db_limit, search: Optional[str] = No
     for user in result:
         if user.profile and user.profile.photo:
             user.profile.photo= proile_url(user.id)
+            
+        user.profile.photo= proile_url(user.id)
+        user.native_country= user.profile.native_country
+        user.current_country= user.profile.current_country
+        user.native_state= user.profile.native_state
+        user.current_state= user.profile.current_state
+        user.native_district= user.profile.native_district
+        user.current_district= user.profile.current_district
         data.append({**user.__dict__, **user.profile.__dict__, "role": user.role})
         
     # return {"status": True, "details": "Users fetched", "data": data, "total_count": total}
@@ -188,6 +203,8 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         if user_profile.aadhaar_number :
             if not user_profile.aadhaar_number.isdigit() or not len(user_profile.aadhaar_number) == 12:
                 return ResponseSchema(status=False, details="Invalid Aadhaar number")
+        else:
+            user_profile.aadhaar_number= None
         
         db_user_obj.update(user_data.model_dump(), synchronize_session=False)
 

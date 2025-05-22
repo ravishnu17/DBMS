@@ -30,7 +30,8 @@ def authenticate(token= Depends(oauth)):
         if token_data['user_id'] is None:
             raise credentials_exception
         return CurUser(**token_data)
-    except:
+    except Exception as e:
+        print(e)
         raise credentials_exception
     
 def adminAuthenticate(token= Depends(oauth)):

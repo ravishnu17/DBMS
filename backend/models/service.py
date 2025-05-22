@@ -80,6 +80,9 @@ class EventRSVP(Base):
     created_at = Column(DateTime, nullable=False)
     status_updated_at = Column(DateTime, nullable=True)
 
+    event = relationship("Event", backref="rsvp", foreign_keys=[event_id])
+    user = relationship("User", backref="event_rsvps", foreign_keys=[user_id])
+
 class HelpRequest(Base):
     __tablename__ = "tbl_help_request"
 
