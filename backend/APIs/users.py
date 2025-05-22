@@ -171,6 +171,8 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         user= json.loads(user)
         user_data= UserSchema(**user)
         user_profile= UserProfileSchema(**user)
+        user_profile.user_id= user_id
+        del user_profile.photo, user_profile.age, 
 
         # check mobile number
         if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
