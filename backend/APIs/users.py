@@ -52,7 +52,7 @@ def verify_location(user_profile: UserProfileSchema, db: Session):
 def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
     user_data= UserSchema(**user.model_dump())
     user_profile= UserProfileSchema(**user.model_dump())
-    del user_profile.photo
+    del user_profile.photo, user_profile.native_country, user_profile.native_state, user_profile.native_district, user_profile.current_country, user_profile.current_state, user_profile.current_district
     # check mobile number
     if user_data.mobile_number.isdigit() == False:
         return ResponseSchema(status=False, details="Invalid mobile number")
@@ -83,7 +83,7 @@ def register_user(user: UserRegisterSchema, db: Session= Depends(get_db)):
         db.add(UserProfile(**user_profile.model_dump()))
         db.commit()
     except SQLAlchemyError as e:
-        db.query(User).filter(User.id == db_data.id).delete()
+        db.query(User).filter(User.id == db_data.id).delete(synchronize_session=False)
         db.commit()
         return ResponseSchema(status=False, details="Something went wrong")
 
@@ -186,7 +186,7 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         user_data= UserSchema(**user)
         user_profile= UserProfileSchema(**user)
         user_profile.user_id= user_id
-        del user_profile.photo, user_profile.age, user_profile.native_country, user_profile.current_country, user_profile.native_state, user_profile.current_state, user_profile.native_district, user_profile.current_district
+        del user_profile.photo, user_profile.age, user_profile.native_country, user_profile.native_state, user_profile.native_district, user_profile.current_country, user_profile.current_state, user_profile.current_district
 
         # check mobile number
         if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
