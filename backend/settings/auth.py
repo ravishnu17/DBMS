@@ -27,7 +27,7 @@ def authenticate(token= Depends(oauth)):
     )
     try:
         token_data= jwt.decode(token, secret.secret_key, algorithms=[secret.algorithm])
-        if token_data['email'] is None:
+        if token_data['user_id'] is None:
             raise credentials_exception
         return CurUser(**token_data)
     except:
@@ -39,20 +39,26 @@ def adminAuthenticate(token= Depends(oauth)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    permissions_exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not enough permissions",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    permissions= False
     try:
         token_data= jwt.decode(token, secret.secret_key, algorithms=[secret.algorithm])
         if token_data['email'] is None:
             raise credentials_exception
         user= CurUser(**token_data)
         if user.role_id not in [secret.admin_role, secret.s_admin_role]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            permissions= True
+            raise permissions_exception
         return user
     except:
-        raise credentials_exception
+        if permissions:
+            raise permissions_exception
+        else:
+            raise credentials_exception
 
 def encrypt(pwd):
     return pwd_context.hash(pwd)
