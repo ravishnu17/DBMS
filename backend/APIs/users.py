@@ -161,7 +161,7 @@ def list_users( skip: int = 0, limit: int = db_limit, search: Optional[str] = No
     for user in result:
         if user.profile and user.profile.photo:
             user.profile.photo= proile_url(user.id)
-            
+
         user.profile.photo= proile_url(user.id)
         user.native_country= user.profile.native_country
         user.current_country= user.profile.current_country
@@ -186,7 +186,7 @@ def update_user(user_id: int, user: str= Form(...), profile:UploadFile= None, db
         user_data= UserSchema(**user)
         user_profile= UserProfileSchema(**user)
         user_profile.user_id= user_id
-        del user_profile.photo, user_profile.age, 
+        del user_profile.photo, user_profile.age, user_profile.native_country, user_profile.current_country, user_profile.native_state, user_profile.current_state, user_profile.native_district, user_profile.current_district
 
         # check mobile number
         if db.query(User).filter(User.id != user_id, User.mobile_number == user_data.mobile_number).first():
