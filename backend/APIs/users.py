@@ -136,12 +136,12 @@ def get_current_user(db: Session = Depends(get_db), curr_user: CurUser = Depends
         return ResponseSchema(status=False, details="User not found")
     if user.profile.photo:
         user.profile.photo= proile_url(user.id)
-        user.native_country= user.profile.native_country
-        user.current_country= user.profile.current_country
-        user.native_state= user.profile.native_state
-        user.current_state= user.profile.current_state
-        user.native_district= user.profile.native_district
-        user.current_district= user.profile.current_district
+    user.native_country= user.profile.native_country
+    user.current_country= user.profile.current_country
+    user.native_state= user.profile.native_state
+    user.current_state= user.profile.current_state
+    user.native_district= user.profile.native_district
+    user.current_district= user.profile.current_district
 
     data= {**user.__dict__, **user.profile.__dict__, "role": user.role}
     return ResponseSchema(status=True, details="User found", data=data)

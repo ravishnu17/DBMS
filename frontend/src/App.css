@@ -1,0 +1,134 @@
+/* Sidebar Styles */
+.sidebar {
+  width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  z-index: 1050;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background-color: var(--sidebar-primary) !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: width 0.3s ease-in-out;
+  box-shadow: 1px 0px 6px 1px #577b83;
+}
+
+.sidebar.open {
+  width: var(--sidebar-width);
+}
+
+.avatar_profile {
+  width: 110px;
+}
+
+.sidebar-menu-content {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.nav-item-main:hover {
+  border-radius: 5px !important;
+  background-color: var(--sidebar-hover) !important;
+  border: 0px !important;
+}
+
+.nav-item-main:hover .nav-link {
+  color: #000 !important;
+}
+
+.nav-item-main.active,
+.nav-item-main.active:hover {
+  background-color: var(--sidebar-selected) !important;
+  border-radius: 5px !important;
+}
+
+.nav-item-main.active .nav-main-only {
+  color: #fff !important;
+  font-weight: bold !important;
+  background-color: var(--sidebar-selected) !important;
+  border-radius: 5px !important;
+}
+
+.nav-link {
+  border: 0px !important;
+  color: #000 !important;
+}
+
+
+/* Header */
+.main-header {
+  width: 100%;
+  height: 60px;
+  background-color: var(--primary) !important;
+  position: sticky;
+  top: 0px;
+  z-index: 999;
+}
+
+
+/* Body Content */
+.admin-content {
+  width: 100%;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+.admin-content.open {
+  width: calc(100% - var(--sidebar-width));
+  margin-left: var(--sidebar-width);
+}
+
+
+/* Footer */
+.footer {
+  position: fixed;
+  width: 100%;
+  right: 0px;
+  bottom: 0px;
+  background-color: var(--button-primary) !important;
+  transition: width 0.3s ease-in-out;
+  z-index: 11;
+}
+
+.footer.open {
+  width: calc(100% - var(--sidebar-width));
+}
+
+.footer-text {
+  font-size: smaller !important;
+}
+
+/* Button */
+.adminBtn {
+  background-color: var(--secondary) !important;
+  color: white !important;
+  border: 0px !important;
+}
+
+.adminBtn:hover {
+  background-color: var(--button-hover) !important;
+  color: white !important;
+}
+
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #d9d9d9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #818181;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c1c1c1;
+}

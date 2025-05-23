@@ -55,7 +55,7 @@ class Service(BaseModel):
     status= Column(service_status_sql_enum, nullable=True)
     requested_user_id = Column(Integer, ForeignKey("tbl_user.id", name="tbl_service_requested_user_id_fkey"), nullable=False)
 
-    category = relationship("Category", backref=backref("services", uselist=False))
+    category = relationship("Category", backref="services", foreign_keys=[category_id])
 
 class Event(BaseModel):
     __tablename__ = "tbl_event"

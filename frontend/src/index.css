@@ -1,0 +1,29 @@
+:root {
+  font-family: 'Times New Roman', Times, serif !important;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: light dark;
+  color: #ffffffde;
+  background-color: #ffffff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --primary: #0c9db4;
+  --secondary: #0f8ba1;
+
+  --sidebar-primary: #ffffff;
+  --sidebar-selected: #4ebfb7;
+  --sidebar-hover: #dff4ff;
+  --footer-primary: var(--secondary);
+  --button-primary: var(--secondary);
+
+  --sidebar-width: 230px;
+  --sidebar-width-mobile: 180px;
+  --button-hover: #0a6783;
+}

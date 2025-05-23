@@ -51,7 +51,7 @@ class ViewServiceSchema(ServiceSchema):
 
 class ViewCategorySchema(CategorySchema):
     id: int
-    services: Optional[ViewServiceSchema] = None
+    requested: Optional[ViewServiceSchema] = None
 
     class Config:
         from_attributes = True

@@ -32,7 +32,9 @@ def read_categories(skip: int = 0, limit: int = db_limit, search: str = None, ty
     categories = categories.all()
     for category in categories:
         if category.services:
-            category.services = category.services if category.services.requested_user_id == curr_user.user_id else None
+            is_requested = filter(lambda x: x.requested_user_id == curr_user.user_id, category.services)
+            is_requested =  list(is_requested) if is_requested else None
+            category.requested = is_requested[0] if is_requested else None
     return ResponseSchema(status=True,details="Categories fetched", data=categories, total_count=total_count)
 
 @category_router.post("")
@@ -183,6 +185,7 @@ def read_events(skip: int = 0, limit: int = db_limit, search: str = None, all_ev
     events = events.all()
     for event in events:
         event.registered_count= len(event.rsvp)
+        event.is_registered= event.rsvp.user_id == curr_user.user_id if event.rsvp else None
     return ResponseSchema(status=True, details="Events fetched", data=events, total_count=total_count)
 
 @event_router.post("")
