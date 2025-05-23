@@ -112,6 +112,21 @@
   color: white !important;
 }
 
+.eye-icon {
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  z-index: 11;
+  border: none;
+  top: 0;
+  bottom: 0;
+}
+
+.login-content {
+  background-color: var(--secondary);
+}
+
+
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -131,4 +146,14 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #c1c1c1;
+}
+
+/* input auto fill color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #fafafa inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000 !important;
 }
