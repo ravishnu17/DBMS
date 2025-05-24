@@ -99,7 +99,7 @@ const Login = () => {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     autoComplete="off"
-                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                    className={`form-control ${errors.password ? 'is-invalid' : ''} rounded`}
                     {...register('password')}
                   />
                   <span
