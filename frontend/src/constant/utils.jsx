@@ -1,10 +1,10 @@
 import Swal from 'sweetalert2';
 import logoicon from '../assets/images/logo.jpg';
 
-// export const baseUrl = "http://localhost:8000";
-export const baseUrl = "http://172.105.54.28:8004";
+export const baseUrl = "http://localhost:8000";
+// export const baseUrl = "http://172.105.54.28:8004";
 
-export const logo = (color) => {
+export const logo = (color, name= DBMS) => {
     return (
         <div className="navbar-brand text-center d-flex align-items-center justify-content-center" style={{ fontFamily: 'auto', fontSize: 'medium' }} >
             <img src={logoicon} alt="Logo" width="34" height="35" className="align-text-center" />

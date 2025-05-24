@@ -47,12 +47,7 @@ function Header({ openSideBar, menu }) {
                         </div>
                     ) : <div></div>}
                     <div className='gap-2'>
-                        {logo(
-                            "white",
-                            currUser?.role_id === 1
-                                ? "Data Management System"
-                                : currUser?.province?.name || ""
-                        )}
+                        <h4 className='fw-bold text-light mt-2'>Don Bosco Migrant Service</h4>
                     </div>
                     <div className='d-flex align-items-center gap-3'>
                         {/* Logout Button */}
