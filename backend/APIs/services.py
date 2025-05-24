@@ -185,7 +185,10 @@ def read_events(skip: int = 0, limit: int = db_limit, search: str = None, all_ev
     events = events.all()
     for event in events:
         event.registered_count= len(event.rsvp)
-        event.is_registered= event.rsvp.user_id == curr_user.user_id if event.rsvp else None
+        if event.rsvp:
+            is_registered = filter(lambda x: x.user_id == curr_user.user_id, event.rsvp)
+            is_registered =  list(is_registered) if is_registered else None
+            event.registered = is_registered[0] if is_registered else None
     return ResponseSchema(status=True, details="Events fetched", data=events, total_count=total_count)
 
 @event_router.post("")
@@ -268,7 +271,7 @@ def register_rsvp(event_id: int, status: RSVPStatusEnum,  db: Session = Depends(
     db.add(rsvp)
     db.commit()
     db.refresh(rsvp)
-    return ResponseSchema(status=True, details="RSVP registered successfully", data=rsvp)
+    return ResponseSchema(status=True, details="You have registered successfully", data=rsvp)
 
 # update RSVP status
 @event_router.put("/rsvp/{event_id}")
@@ -284,7 +287,7 @@ def update_rsvp(event_id: int, status: RSVPStatusEnum, db: Session = Depends(get
     existing_rsvp.status_updated_at = datetime.now(timezone.utc)
     db.commit()
     
-    return ResponseSchema(status=True, details="RSVP updated successfully")
+    return ResponseSchema(status=True, details="Register status updated successfully")
 
 # delete RSVP
 @event_router.delete("/rsvp/{event_id}")
@@ -299,5 +302,5 @@ def delete_rsvp(event_id: int, db: Session = Depends(get_db), curr_user: CurUser
     existing_rsvp.delete(synchronize_session=False)
     db.commit()
     
-    return ResponseSchema(status=True, details="RSVP deleted successfully")
+    return ResponseSchema(status=True, details="Register deleted successfully")
 

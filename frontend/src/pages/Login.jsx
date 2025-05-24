@@ -11,7 +11,7 @@ import * as yup from 'yup';
 // ✅ Define Yup validation schema
 const schema = yup.object().shape({
   username: yup.string().email('Enter a valid email').required('Email is required'),
-  password: yup.string().min(4, 'Password must be at least 4 characters').required('Password is required'),
+  password: yup.string().required('Password is required'),
 });
 
 const Login = () => {
@@ -65,9 +65,8 @@ const Login = () => {
         backgroundPosition: 'center',
       }}
     >
-      <Loader status={loading} />
       <div className="shadow-lg border overflow-hidden rounded w-50">
-        <div className="row g-0" style={{minHeight: "55vh"}}>
+        <div className="row g-0" style={{ minHeight: "55vh" }}>
           <div className="col-md-6 text-white d-flex flex-column justify-content-center align-items-center p-4 login-content">
             <img src={logo} width={150} height={150} className="rounded" alt="Logo" />
             <h2>Welcome to DBMS!</h2>
@@ -116,7 +115,7 @@ const Login = () => {
               </div>
 
               <div className="d-grid">
-                <button type="submit" className="btn adminBtn">Login</button>
+                <button type="submit" className="btn adminBtn fw-bold d-flex justify-content-center align-items-center gap-2">Login <Loader status={loading} color="#7c0b98ff" /></button>
               </div>
             </form>
           </div>

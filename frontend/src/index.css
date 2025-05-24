@@ -18,7 +18,7 @@
   --secondary: #0f8ba1;
 
   --sidebar-primary: #ffffff;
-  --sidebar-selected: #4ebfb7;
+  --sidebar-selected: var(--secondary);
   --sidebar-hover: #dff4ff;
   --footer-primary: var(--secondary);
   --button-primary: var(--secondary);

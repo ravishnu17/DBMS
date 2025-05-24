@@ -59,7 +59,7 @@ class ViewCategorySchema(CategorySchema):
 class ViewEventSchema(EventSchema):
     id: int
     registered_count: Optional[int] = 0
-    # rsvp: Optional[EventRSVPSchema] = None
+    registered: Optional[EventRSVPSchema] = None
     class Config:
         from_attributes = True
 

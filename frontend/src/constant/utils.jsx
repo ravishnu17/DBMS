@@ -4,7 +4,7 @@ import logoicon from '../assets/images/logo.jpg';
 export const baseUrl = "http://localhost:8000";
 // export const baseUrl = "http://172.105.54.28:8004";
 
-export const logo = (color, name= DBMS) => {
+export const logo = (color, name = DBMS) => {
     return (
         <div className="navbar-brand text-center d-flex align-items-center justify-content-center" style={{ fontFamily: 'auto', fontSize: 'medium' }} >
             <img src={logoicon} alt="Logo" width="34" height="35" className="align-text-center" />
@@ -38,11 +38,11 @@ export const toast = (title, msg, icon = "success", position = 'top-end') => {
     })
 }
 
-export const Loader = ({status}) => {
+export const FullLoader = ({ status }) => {
     return (
         status ?
             <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ zIndex: 1, background: '#0000002e' }}>
-                <div className="text-center" style={{zIndex:999}}>
+                <div className="text-center" style={{ zIndex: 999 }}>
                     <div className="spinner-border" style={{ width: '2.5rem', height: '2.5rem', color: '#1e9229' }} role="status">
                         <span className="visually-hidden">Loading...</span>
                     </div>
@@ -53,3 +53,12 @@ export const Loader = ({status}) => {
             <div></div>
     );
 };
+
+export const Loader = ({ status, color }) => {
+    return (
+        status ?
+            <div className="spinner-border" role="status" style={{ width: '1.5rem', height: '1.5rem', color: color || '#1e9229' }} />
+            :
+            <div></div>
+    );
+}
